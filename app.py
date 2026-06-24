@@ -624,12 +624,61 @@ elif page == "🗺️ Location Map":
                     
         for _, row in locations_display.iterrows():
             is_sel = (row["location"] == st.session_state.selected_station)
-            icon_type = "star" if is_sel else "info-sign"
-            icon_color = "orange" if is_sel else ("green" if row["avg_wqi"]>=75 else "orange" if row["avg_wqi"]>=50 else "red")
+            g_color = wqi_grade(row["avg_wqi"])[1]
             
+            if is_sel:
+                icon_html = f"""
+                <div style="position: relative; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;">
+                    <div style="
+                        position: absolute; width: 44px; height: 44px; border-radius: 50%;
+                        background: rgba(247,127,0,0.4);
+                        animation: pulse-orange 1.5s infinite ease-in-out;
+                    "></div>
+                    <div style="
+                        position: relative; width: 28px; height: 28px; 
+                        border-radius: 50%; 
+                        background: #f77f00; 
+                        border: 2px solid #ffffff; 
+                        box-shadow: 0 0 15px #f77f00, 0 0 30px #f77f00;
+                        display: flex; align-items: center; justify-content: center;
+                        color: #ffffff; font-size: 14px; font-weight: 900;
+                    ">
+                        ⭐
+                    </div>
+                </div>
+                <style>
+                @keyframes pulse-orange {{
+                    0% {{ transform: scale(0.8); opacity: 1; }}
+                    100% {{ transform: scale(1.6); opacity: 0; }}
+                }}
+                </style>
+                """
+                marker_size = (36, 36)
+            else:
+                icon_html = f"""
+                <div style="
+                    width: 28px; height: 28px; 
+                    border-radius: 50%; 
+                    background: {g_color}; 
+                    border: 2px solid #ffffff; 
+                    box-shadow: 0 0 10px {g_color}, 0 0 20px {g_color}88;
+                    display: flex; align-items: center; justify-content: center;
+                    color: #ffffff; font-size: 10px; font-weight: 800;
+                    font-family: 'Inter', sans-serif;
+                ">
+                    {int(row['avg_wqi'])}
+                </div>
+                """
+                marker_size = (28, 28)
+                
             folium.Marker(
-                location=[row["lat"], row["lon"]], tooltip=row["location"],
-                icon=folium.Icon(color=icon_color, icon=icon_type)
+                location=[row["lat"], row["lon"]],
+                tooltip=f"{row['location']} (WQI: {row['avg_wqi']:.1f})",
+                icon=folium.DivIcon(
+                    html=icon_html,
+                    icon_size=marker_size,
+                    icon_anchor=(marker_size[0]//2, marker_size[1]//2)
+                )
             ).add_to(marker_cluster)
             
         if st.session_state.sim_active:
