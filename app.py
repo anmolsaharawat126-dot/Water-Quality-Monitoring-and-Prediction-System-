@@ -12,6 +12,9 @@ from pathlib import Path
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score, confusion_matrix, roc_curve, auc
+import folium
+from streamlit_folium import st_folium
+from folium.plugins import MarkerCluster
 
 # ─────────────────────────────────────────────────────────────────────────────
 # ML MODEL PREPARATION
@@ -628,7 +631,6 @@ if page == "🏠 Dashboard":
               </div>
             </div>
             """, unsafe_allow_html=True)
-
     else:
         st.info("📌 No data yet! Go to **🔮 AI Predictor** to add your first reading, or load demo data below.")
         if st.button("🎲 Load 30-Day Demo Data"):
@@ -681,7 +683,7 @@ if page == "🏠 Dashboard":
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PAGE: AI PREDICTOR
+# PAGE: TEST WATER
 # ═════════════════════════════════════════════════════════════════════════════
 elif page == "🔮 AI Predictor":
     st.markdown("## 🔮 AI Water Quality Predictor & Diagnostics")
@@ -982,11 +984,146 @@ elif page == "🔮 AI Predictor":
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PAGE: LOCATION MAP
+# PAGE: ANALYTICS
+# ═════════════════════════════════════════════════════════════════════════════
+elif page == "📊 Analytics":
+    st.markdown("## 📊 Analytics & Insights")
+    history = st.session_state.history
+    if len(history) < 2:
+        st.info("📌 Not enough data. Add at least 2 water tests to see analytics.")
+        st.stop()
+
+    df = pd.DataFrame(history)
+
+    # ── Summary stats ──
+    st.markdown("### 📋 Summary Statistics")
+    num_cols = ["ph", "turbidity", "do", "heavy_metals", "nitrates", "tds", "temperature", "chlorine", "wqi"]
+    avail = [c for c in num_cols if c in df.columns]
+    st.dataframe(df[avail].describe().round(2), use_container_width=True)
+
+    st.markdown("---")
+
+    # ── Param trend charts ──
+    st.markdown("### 📈 Parameter Trends Over Time")
+    param_select = st.multiselect(
+        "Select parameters to plot:",
+        ["wqi", "ph", "turbidity", "do", "heavy_metals", "nitrates", "tds", "temperature", "chlorine"],
+        default=["wqi", "ph"],
+    )
+    if param_select:
+        fig_trend = go.Figure()
+        colors = ["#00b4d8","#06d6a0","#f77f00","#ef476f","#90e0ef","#a8dadc","#ffd166","#e76f51"]
+        for idx, param in enumerate(param_select):
+            if param in df.columns:
+                fig_trend.add_trace(go.Scatter(
+                    x=df["timestamp"], y=df[param],
+                    mode="lines+markers",
+                    name=param.replace("_", " ").title(),
+                    line=dict(color=colors[idx % len(colors)], width=2),
+                    marker=dict(size=6),
+                ))
+        fig_trend.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#e0f4ff"),
+            xaxis=dict(showgrid=False, color="#7fb3d3"),
+            yaxis=dict(gridcolor="rgba(0,180,216,0.1)", color="#7fb3d3"),
+            legend=dict(bgcolor="rgba(0,0,0,0.3)", bordercolor="#00b4d8"),
+            height=400, margin=dict(t=20, b=20),
+        )
+        st.plotly_chart(fig_trend, use_container_width=True)
+
+    # ── Distribution charts ──
+    st.markdown("### 📊 Parameter Distributions")
+    col1, col2 = st.columns(2)
+    with col1:
+        fig_ph = px.histogram(df, x="ph", nbins=15,
+                               title="pH Distribution",
+                               color_discrete_sequence=["#00b4d8"])
+        fig_ph.add_vline(x=6.5, line_dash="dash", line_color="#ef233c")
+        fig_ph.add_vline(x=8.5, line_dash="dash", line_color="#ef233c",
+                          annotation_text="WHO Limits")
+        fig_ph.update_layout(paper_bgcolor="rgba(0,0,0,0)",
+                               plot_bgcolor="rgba(0,0,0,0)",
+                               font=dict(color="#e0f4ff"), height=300)
+        st.plotly_chart(fig_ph, use_container_width=True)
+
+    with col2:
+        fig_wqi = px.histogram(df, x="wqi", nbins=15,
+                                title="WQI Score Distribution",
+                                color_discrete_sequence=["#06d6a0"])
+        fig_wqi.add_vline(x=50, line_dash="dash", line_color="#f77f00",
+                           annotation_text="Safe Threshold")
+        fig_wqi.update_layout(paper_bgcolor="rgba(0,0,0,0)",
+                               plot_bgcolor="rgba(0,0,0,0)",
+                               font=dict(color="#e0f4ff"), height=300)
+        st.plotly_chart(fig_wqi, use_container_width=True)
+
+    # ── Safety pie ──
+    st.markdown("### 🥧 Safe vs Unsafe Breakdown")
+    col1, col2 = st.columns(2)
+    with col1:
+        if "safe" in df.columns:
+            safe_counts = df["safe"].value_counts()
+            fig_pie = go.Figure(go.Pie(
+                labels=["Safe ✅", "Unsafe ❌"],
+                values=[safe_counts.get(True, 0), safe_counts.get(False, 0)],
+                hole=0.55,
+                marker=dict(colors=["#06d6a0", "#ef233c"],
+                            line=dict(color="#03071e", width=3)),
+                textinfo="percent+label",
+                textfont=dict(color="#fff"),
+            ))
+            fig_pie.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#e0f4ff"),
+                height=320, margin=dict(t=20, b=20),
+            )
+            st.plotly_chart(fig_pie, use_container_width=True)
+
+    with col2:
+        # Grade distribution
+        if "grade" in df.columns:
+            g_counts = df["grade"].value_counts()
+            fig_grade = go.Figure(go.Bar(
+                x=g_counts.index,
+                y=g_counts.values,
+                marker_color=["#06d6a0","#90e0ef","#f77f00","#ef476f","#ef233c"][:len(g_counts)],
+            ))
+            fig_grade.update_layout(
+                title="WQI Grade Distribution",
+                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#e0f4ff"),
+                xaxis=dict(showgrid=False), yaxis=dict(gridcolor="rgba(0,180,216,0.1)"),
+                height=320, margin=dict(t=40, b=20),
+            )
+            st.plotly_chart(fig_grade, use_container_width=True)
+
+    # ── Correlation heatmap ──
+    st.markdown("### 🔥 Parameter Correlation Heatmap")
+    corr_cols = [c for c in avail if c in df.columns]
+    if len(corr_cols) >= 3:
+        corr = df[corr_cols].corr().round(2)
+        fig_heat = go.Figure(go.Heatmap(
+            z=corr.values,
+            x=corr.columns.tolist(),
+            y=corr.index.tolist(),
+            colorscale=[[0,"#ef233c"],[0.5,"#03071e"],[1,"#06d6a0"]],
+            text=corr.values.round(2),
+            texttemplate="%{text}",
+            textfont=dict(size=11, color="#fff"),
+        ))
+        fig_heat.update_layout(
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#e0f4ff"), height=400,
+        )
+        st.plotly_chart(fig_heat, use_container_width=True)
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PAGE: LOCATION MAP  (Rich Interactive Version)
 # ═════════════════════════════════════════════════════════════════════════════
 elif page == "🗺️ Location Map":
     st.markdown("## 🗺️ Premium Interactive Monitoring Network")
-    st.markdown("Explore the real-time monitoring grid. Use the control center panel to filter stations or simulate grid-wide contamination impact.")
+    st.markdown("Explore the real-time monitoring grid. Click on any station marker or use the sidebar profile control to analyze detailed indicators.")
 
     history = st.session_state.history
     if not history:
@@ -1026,49 +1163,6 @@ elif page == "🗺️ Location Map":
         st.session_state.sim_radius = 1.5
         st.session_state.sim_intensity = "Moderate"
 
-    # Layout with Columns
-    col_map, col_sim = st.columns([3, 1.2])
-
-    with col_sim:
-        st.markdown("""
-        <div class="section-card" style="border: 1px solid rgba(239,35,60,0.3); margin-top: 1rem;">
-            <div class="section-title" style="color:#ef233c; font-size:1.15rem; margin-bottom: 0.5rem;">🚨 AI Grid Contamination Simulator</div>
-            <p style="font-size:0.8rem; color:#7fb3d3; margin-bottom:1rem;">Select a monitoring station to simulate a local contaminant leak and observe safety drops across the grid network.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        sim_station = st.selectbox("🎯 Target Station", locations["location"].tolist(), index=0)
-        sim_type = st.selectbox("☣️ Contaminant Type", 
-                                ["Heavy Metal Spill", "Acid Dump (pH Drop)", "Algal Bloom (DO Drop)", "Sewer Overflow"])
-        sim_radius = st.slider("🌐 Spread Radius (Degrees)", 0.5, 6.0, 2.0, 0.1)
-        sim_intensity = st.select_slider("🔥 Severity Level", options=["Low", "Moderate", "Severe", "Catastrophic"])
-        
-        c_btn1, c_btn2 = st.columns(2)
-        with c_btn1:
-            if st.button("🔥 Run Simulation", use_container_width=True):
-                st.session_state.sim_active = True
-                st.session_state.sim_station = sim_station
-                st.session_state.sim_type = sim_type
-                st.session_state.sim_radius = sim_radius
-                st.session_state.sim_intensity = sim_intensity
-                st.success("Simulation Active!")
-        with c_btn2:
-            if st.button("♻️ Reset Grid", use_container_width=True):
-                st.session_state.sim_active = False
-                st.session_state.sim_station = ""
-                st.info("Grid status reset.")
-                st.rerun()
-
-        # Display affected status text
-        if st.session_state.sim_active:
-            st.markdown(f"""
-            <div style='padding:0.75rem; background:rgba(239,35,60,0.1); border:1px solid #ef233c; border-radius:8px; font-size:0.8rem;'>
-                <strong>⚠️ Active Threat:</strong> {st.session_state.sim_type}<br/>
-                <strong>Source:</strong> {st.session_state.sim_station}<br/>
-                <strong>Intensity:</strong> {st.session_state.sim_intensity}
-            </div>
-            """, unsafe_allow_html=True)
-
     # ── Apply Simulation Logic to WQI metrics ──
     locations_display = locations.copy()
     if st.session_state.sim_active:
@@ -1096,153 +1190,279 @@ elif page == "🗺️ Location Map":
         lambda s: "🟢 Safe" if s else "🔴 Unsafe"
     )
 
+    if "selected_station" not in st.session_state:
+        st.session_state.selected_station = locations_display.iloc[0]["location"]
+
+    # Layout with Columns
+    col_map, col_details = st.columns([2.5, 1.5])
+
+    # Right side: Detail Dashboard Panel
+    with col_details:
+        tab_profile, tab_sim = st.tabs(["📋 Station Profile", "☣️ Grid Simulator"])
+        
+        with tab_profile:
+            # Sync selection
+            if st.session_state.selected_station not in locations_display["location"].tolist():
+                st.session_state.selected_station = locations_display.iloc[0]["location"]
+            
+            selected_idx = locations_display["location"].tolist().index(st.session_state.selected_station)
+            sel_station = st.selectbox(
+                "Select Station Profile:",
+                locations_display["location"].tolist(),
+                index=selected_idx,
+                key="station_select_dropdown"
+            )
+            st.session_state.selected_station = sel_station
+            
+            # Get latest record for selected station
+            station_df = df[df["location"] == st.session_state.selected_station].sort_values("timestamp")
+            if not station_df.empty:
+                latest_record = station_df.iloc[-1]
+            else:
+                latest_record = locations_display[locations_display["location"] == st.session_state.selected_station].iloc[0]
+                
+            # WQI and safety grade details
+            wqi_val = latest_record["wqi"]
+            # If simulated drop exists
+            if st.session_state.sim_active:
+                row_match = locations_display[locations_display["location"] == st.session_state.selected_station].iloc[0]
+                wqi_val = row_match["avg_wqi"]
+                
+            grade, color = wqi_grade(wqi_val)
+            safe = bool(wqi_val >= 50.0)
+            
+            # Status Badge + Title
+            badge_label = "OPTIMAL" if wqi_val >= 75 else ("WARNING" if wqi_val >= 50 else "CRITICAL")
+            badge_color = "#06d6a0" if wqi_val >= 75 else ("#f77f00" if wqi_val >= 50 else "#ef233c")
+            
+            st.markdown(f"""
+            <div style="display:flex; align-items:center; gap:8px; margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                <span style="background:{badge_color}; color:#fff; font-size:0.75rem; font-weight:700; padding:2px 8px; border-radius:4px;">{badge_label}</span>
+                <span style="font-size:1.5rem; font-weight:800; color:#e0f4ff; line-height:1.2;">{st.session_state.selected_station}</span>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Location details
+            st.markdown(f"""
+            <div style="font-size: 0.85rem; color: #7fb3d3; margin-bottom: 1rem; line-height: 1.4;">
+                <strong>Location:</strong> Coordinates ({latest_record['lat']:.4f}, {latest_record['lon']:.4f}) in India grid.<br/>
+                <strong>Junction/Source:</strong> {latest_record.get('source_type', 'River / Stream')} | <strong>Corridor:</strong> Monitoring Station
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # KPI Metrics Row
+            col_met1, col_met2 = st.columns(2)
+            with col_met1:
+                st.markdown(f"""
+                <div style="margin-bottom:1rem;">
+                    <div style="font-size: 0.75rem; color: #7fb3d3; text-transform: uppercase; font-weight: 600;">Est. Score</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #e0f4ff;">{wqi_val:.1f} WQI</div>
+                </div>
+                """, unsafe_allow_html=True)
+            with col_met2:
+                # safety prob from ML confidence or simple score
+                safe_pct = latest_record["safe_pct"] if "safe_pct" in latest_record else (wqi_val if safe else 100 - wqi_val)
+                st.markdown(f"""
+                <div style="margin-bottom:1rem;">
+                    <div style="font-size: 0.75rem; color: #7fb3d3; text-transform: uppercase; font-weight: 600;">Safety / Closure Prob</div>
+                    <div style="font-size: 1.8rem; font-weight: 800; color: #06d6a0;">{safe_pct:.0f}%</div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+            # Suggested Deployment
+            if wqi_val >= 75:
+                deploy_msg = "🌿 None | ✅ Safe for immediate use"
+                req_actions = "None (Monitor parameters regularly)"
+            elif wqi_val >= 50:
+                deploy_msg = "🪨 Carbon Filter | 🌡️ Boil before drinking"
+                req_actions = "Sediment cloth filtration & boiling"
+            else:
+                deploy_msg = "🔬 Reverse Osmosis (RO) | 🧪 Disinfection"
+                req_actions = "DANGER: Boiling insufficient, RO required"
+                
+            st.markdown(f"""
+            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; margin-bottom: 1.2rem; font-size: 0.85rem;">
+                <strong>Suggested Deployment:</strong> 🧪 {deploy_msg}<br/>
+                <strong style="color:#ef233c;">Required:</strong> {req_actions}
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # SHAP Decision Contribution
+            st.markdown("<div style='font-size: 0.9rem; font-weight: 700; color: #e0f4ff; margin-bottom: 0.5rem;'>🧠 Decision Contribution (SHAP)</div>", unsafe_allow_html=True)
+            
+            # Calculate drops
+            r_ph = latest_record.get("ph", 7.0)
+            r_turb = latest_record.get("turbidity", 1.0)
+            r_do = latest_record.get("do", 6.0)
+            r_heavy = latest_record.get("heavy_metals", 0.05)
+            r_nit = latest_record.get("nitrates", 5.0)
+            r_tds = latest_record.get("tds", 250.0)
+            r_temp = latest_record.get("temperature", 25.0)
+            r_chl = latest_record.get("chlorine", 0.2)
+            
+            ph_contrib = max(0.0, abs(r_ph - 7.0) * 20.0) / 8
+            turb_contrib = max(0.0, r_turb * 20.0) / 8
+            do_contrib = max(0.0, 100.0 - min(100.0, r_do / 8.0 * 100.0)) / 8
+            heavy_contrib = max(0.0, r_heavy * 1000.0) / 8
+            nitrate_contrib = max(0.0, r_nit * 5.0) / 8
+            tds_contrib = max(0.0, r_tds / 5.0) / 8
+            temp_contrib = max(0.0, abs(r_temp - 20.0) * 3.0) / 8
+            chlorine_contrib = max(0.0, r_chl * 200.0) / 8
+            
+            shap_data = pd.DataFrame({
+                "Feature": [
+                    "Heavy Metals", "Turbidity", "TDS Level", "pH Deviation",
+                    "Dissolved Oxygen", "Nitrates", "Temperature Deviation", "Chlorine"
+                ],
+                "Contribution": [
+                    heavy_contrib, turb_contrib, tds_contrib, ph_contrib,
+                    do_contrib, nitrate_contrib, temp_contrib, chlorine_contrib
+                ]
+            }).sort_values(by="Contribution", ascending=True)
+            
+            # Plotly SHAP bar chart
+            fig_shap = px.bar(
+                shap_data,
+                x="Contribution",
+                y="Feature",
+                orientation="h",
+                color="Contribution",
+                color_continuous_scale=[[0, "rgba(0,180,216,0.3)"], [0.5, "#f77f00"], [1, "#ef233c"]],
+                height=220
+            )
+            fig_shap.update_layout(
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)",
+                font=dict(color="#e0f4ff", size=10),
+                xaxis=dict(gridcolor="rgba(0,180,216,0.1)", title="Risk Impact"),
+                yaxis=dict(title=None),
+                margin=dict(t=5, b=5, l=5, r=5),
+                coloraxis_showscale=False
+            )
+            st.plotly_chart(fig_shap, use_container_width=True)
+            
+        with tab_sim:
+            # Simulator controls card
+            st.markdown("""
+            <div class="section-card" style="border: 1px solid rgba(239,35,60,0.3); padding:0.8rem; margin-top:0.5rem; margin-bottom:0.5rem;">
+                <div class="section-title" style="color:#ef233c; font-size:1rem; margin-bottom: 0.3rem;">🚨 Grid Contamination Simulator</div>
+                <p style="font-size:0.75rem; color:#7fb3d3; margin-bottom:0.5rem;">Trigger a contaminant spill and observe the simulated propagation across the network.</p>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            sim_station = st.selectbox("🎯 Target Station Source", locations["location"].tolist(), index=0, key="sim_station_selectbox")
+            sim_type = st.selectbox("☣️ Contamination Agent", 
+                                    ["Heavy Metal Spill", "Acid Dump (pH Drop)", "Algal Bloom (DO Drop)", "Sewer Overflow"], key="sim_type_selectbox")
+            sim_radius = st.slider("🌐 Spread Radius (Degrees)", 0.5, 6.0, 2.0, 0.1, key="sim_radius_slider")
+            sim_intensity = st.select_slider("🔥 Severity Level", options=["Low", "Moderate", "Severe", "Catastrophic"], key="sim_intensity_slider")
+            
+            c_btn1, c_btn2 = st.columns(2)
+            with c_btn1:
+                if st.button("🔥 Run Simulation", use_container_width=True, key="run_sim_button"):
+                    st.session_state.sim_active = True
+                    st.session_state.sim_station = sim_station
+                    st.session_state.sim_type = sim_type
+                    st.session_state.sim_radius = sim_radius
+                    st.session_state.sim_intensity = sim_intensity
+                    st.success("Simulation Active!")
+                    st.rerun()
+            with c_btn2:
+                if st.button("♻️ Reset Grid", use_container_width=True, key="reset_sim_button"):
+                    st.session_state.sim_active = False
+                    st.session_state.sim_station = ""
+                    st.info("Grid status reset.")
+                    st.rerun()
+
+    # Left side: Premium Folium Leaflet Map
     with col_map:
-        # Map Controls
-        col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([2, 2, 1])
-        with col_ctrl1:
-            map_style = st.selectbox("🗺️ Map Style",
-                ["carto-darkmatter", "open-street-map", "carto-positron",
-                 "stamen-terrain", "stamen-watercolor"], index=0)
-        with col_ctrl2:
-            color_by = st.selectbox("🎨 Colour Markers By",
-                ["Average WQI", "Last Status (Safe/Unsafe)", "Number of Tests"])
-        with col_ctrl3:
-            show_labels = st.toggle("Station Labels", value=True)
-
-        # Build Map
-        fig_map = go.Figure()
-
-        # ── 1. Grid flow lines (semi-transparent network connections) ──
-        line_lats = []
-        line_lons = []
-        # Calculate connections (if distance is small, draw a link line)
+        map_style = st.selectbox(
+            "🗺️ Map style selection",
+            ["CartoDB dark_matter", "OpenStreetMap", "CartoDB positron"],
+            index=0
+        )
+        
+        # Center coordinates
+        center_lat = float(locations_display["lat"].mean())
+        center_lon = float(locations_display["lon"].mean())
+        
+        # Create map
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=5, tiles=map_style)
+        
+        # Draw network flow lines
         for i in range(len(locations_display)):
             for j in range(i + 1, len(locations_display)):
                 lat1, lon1 = locations_display.iloc[i]["lat"], locations_display.iloc[i]["lon"]
                 lat2, lon2 = locations_display.iloc[j]["lat"], locations_display.iloc[j]["lon"]
                 dist = np.sqrt((lat1 - lat2)**2 + (lon1 - lon2)**2)
-                if dist < 6.5: # Network connection distance
-                    line_lats.extend([lat1, lat2, None])
-                    line_lons.extend([lon1, lon2, None])
-
-        fig_map.add_trace(go.Scattermapbox(
-            lat=line_lats,
-            lon=line_lons,
-            mode="lines",
-            line=dict(width=1.5, color="rgba(0, 180, 216, 0.25)"),
-            hoverinfo="skip",
-            showlegend=False,
-            name="grid_lines"
-        ))
-
-        # ── 2. Glowing outer halos trace ──
-        fig_map.add_trace(go.Scattermapbox(
-            lat=locations_display["lat"],
-            lon=locations_display["lon"],
-            mode="markers",
-            marker=dict(
-                size=locations_display["tests"].clip(upper=40) * 1.8 + 26,
-                color=locations_display["color_hex"],
-                opacity=0.35,
-                sizemode="diameter",
-            ),
-            hoverinfo="skip",
-            showlegend=False,
-            name="glow_halos"
-        ))
-
-        # ── 3. Inner solid station core markers ──
-        if color_by == "Average WQI":
-            marker_color = locations_display["avg_wqi"]
-            colorscale = [[0,"#ef233c"],[0.25,"#f77f00"],[0.5,"#90e0ef"],[1,"#06d6a0"]]
-            showscale = True
-            cbar_title = "WQI"
-        elif color_by == "Number of Tests":
-            marker_color = locations_display["tests"]
-            colorscale = [[0,"#023e8a"],[1,"#00b4d8"]]
-            showscale = True
-            cbar_title = "Tests"
-        else:
-            marker_color = list(locations_display["color_hex"])
-            colorscale = None
-            showscale = False
-            cbar_title = ""
-
-        _marker = dict(
-            size=locations_display["tests"].clip(upper=40) + 12,
-            color=marker_color,
-            opacity=0.95,
-            sizemode="diameter",
-        )
-        if showscale:
-            _marker["colorscale"] = colorscale
-            _marker["colorbar"] = dict(
-                title=cbar_title,
-                thickness=12
-            )
-            _marker["showscale"] = True
-
-        hover_text = [
-            f"<b>📍 {row.location}</b><br>"
-            f"─────────────────────<br>"
-            f"🧪 Tests Done: <b>{int(row.tests)}</b><br>"
-            f"📊 Avg WQI: <b>{row.avg_wqi:.1f}</b> ({row.grade})<br>"
-            f"🔻 Min WQI: {row.min_wqi:.1f} &nbsp;&nbsp; 🔺 Max WQI: {row.max_wqi:.1f}<br>"
-            f"✅ Safe Rate: <b>{row.safe_pct}%</b><br>"
-            f"🕐 Last Result: {row.status_label}"
-            for row in locations_display.itertuples()
-        ]
-
-        fig_map.add_trace(go.Scattermapbox(
-            lat=locations_display["lat"],
-            lon=locations_display["lon"],
-            mode="markers+text" if show_labels else "markers",
-            text=locations_display["location"].apply(lambda x: x[:14] + "…" if len(x) > 14 else x) if show_labels else None,
-            textposition="top center",
-            textfont=dict(size=11, color="#e0f4ff"),
-            marker=_marker,
-            hovertemplate="%{hovertext}<extra></extra>",
-            hovertext=hover_text,
-            name="Stations",
-            showlegend=False
-        ))
-
-        # ── 4. Dynamic simulation spread pulse ──
+                if dist < 6.5:
+                    folium.PolyLine(
+                        locations=[[lat1, lon1], [lat2, lon2]],
+                        color="#00b4d8",
+                        weight=1.5,
+                        opacity=0.15
+                    ).add_to(m)
+                    
+        # Add marker cluster
+        marker_cluster = MarkerCluster().add_to(m)
+        
+        # Add markers
+        color_map = {
+            "Excellent": "green",
+            "Good": "lightgreen",
+            "Fair": "orange",
+            "Poor": "red",
+            "Very Poor": "darkred"
+        }
+        for _, row in locations_display.iterrows():
+            icon_color = color_map.get(row["grade"], "blue")
+            folium.Marker(
+                location=[row["lat"], row["lon"]],
+                popup=f"📍 {row['location']}<br/>WQI: {row['avg_wqi']:.1f} ({row['grade']})",
+                tooltip=row["location"],
+                icon=folium.Icon(color=icon_color, icon="info-sign")
+            ).add_to(marker_cluster)
+            
+        # Draw simulation epicenter wave
         if st.session_state.sim_active:
-            # Epicenter Marker (Pulsing Red Neon)
-            fig_map.add_trace(go.Scattermapbox(
-                lat=[epi_lat],
-                lon=[epi_lon],
-                mode="markers",
-                marker=dict(
-                    size=st.session_state.sim_radius * 90, # Scale radius for visualization
-                    color="rgba(239, 35, 60, 0.18)",
-                    opacity=0.45,
-                    sizemode="diameter",
-                    line=dict(color="#ef233c", width=2)
-                ),
-                hoverinfo="text",
-                hovertext=f"☣️ Simulation Source: {st.session_state.sim_station}",
-                showlegend=False,
-                name="sim_epicenter"
-            ))
-
-        # Map layout
-        center_lat = float(locations_display["lat"].mean())
-        center_lon = float(locations_display["lon"].mean())
-        fig_map.update_layout(
-            mapbox=dict(
-                style=map_style,
-                center=dict(lat=center_lat, lon=center_lon),
-                zoom=4.2,
-            ),
-            paper_bgcolor="rgba(0,0,0,0)",
-            plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#e0f4ff", family="Inter"),
-            height=540,
-            margin=dict(t=0, b=0, l=0, r=0),
+            folium.Circle(
+                location=[epi_lat, epi_lon],
+                radius=st.session_state.sim_radius * 111000,
+                color="#ef233c",
+                fill=True,
+                fill_color="#ef233c",
+                fill_opacity=0.15,
+                weight=2
+            ).add_to(m)
+            
+        # Render map using st_folium
+        map_data = st_folium(
+            m,
+            width="100%",
+            height=580,
+            key="folium_map",
+            returned_objects=["last_object_clicked"]
         )
-        st.plotly_chart(fig_map, use_container_width=True)
+
+        # Synchronize map click with selected station profile
+        if map_data and map_data.get("last_object_clicked"):
+            click_lat = map_data["last_object_clicked"]["lat"]
+            click_lng = map_data["last_object_clicked"]["lng"]
+            current_click = (click_lat, click_lng)
+            
+            # Check if click coordinates have changed
+            if "last_click" not in st.session_state:
+                st.session_state.last_click = None
+                
+            if current_click != st.session_state.last_click:
+                st.session_state.last_click = current_click
+                # Find closest station
+                distances = locations_display.apply(
+                    lambda r: np.sqrt((r["lat"] - click_lat)**2 + (r["lon"] - click_lng)**2),
+                    axis=1
+                )
+                closest_idx = distances.idxmin()
+                st.session_state.selected_station = locations_display.loc[closest_idx, "location"]
+                st.rerun()
 
     # ── WQI Legend bar ──
     st.markdown("""
@@ -1423,7 +1643,6 @@ elif page == "💡 Daily Tips":
             ("Community testing drives", "Organise community water testing camps, especially in flood-prone and rural areas."),
         ],
         "🚨 Emergency Situations": [
-            ("Cold weather freeze protection", "Insulate pipes in unheated spaces. Let faucets drip slowly during hard freezes to prevent bursts."),
             ("Flood water safety", "Floodwater is highly contaminated. Never drink it. Use sealed bottled water or boil/treat."),
             ("After power cuts", "If water has been stored without electricity (no pump) for >24 hours, boil before drinking."),
             ("Chemical spill nearby", "If a chemical spill is reported near your water source, stop using tap water until cleared."),
