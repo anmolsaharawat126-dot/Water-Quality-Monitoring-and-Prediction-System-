@@ -1412,12 +1412,18 @@ elif page == "🗺️ Location Map":
             index=0
         )
         
+        tile_name = "cartodbdark_matter"
+        if map_style == "OpenStreetMap":
+            tile_name = "openstreetmap"
+        elif map_style == "CartoDB positron":
+            tile_name = "cartodbpositron"
+        
         # Center coordinates
         center_lat = float(locations_display["lat"].mean())
         center_lon = float(locations_display["lon"].mean())
         
         # Create map
-        m = folium.Map(location=[center_lat, center_lon], zoom_start=5, tiles=map_style)
+        m = folium.Map(location=[center_lat, center_lon], zoom_start=5, tiles=tile_name)
         
         # Draw network flow lines
         for i in range(len(locations_display)):
@@ -1485,8 +1491,8 @@ elif page == "🗺️ Location Map":
         # Render map using st_folium
         map_data = st_folium(
             m,
-            width="100%",
             height=580,
+            use_container_width=True,
             key="folium_map",
             returned_objects=["last_object_clicked"]
         )
@@ -1823,237 +1829,4 @@ elif page == "⚠️ Alerts":
 
     if not critical and not warning:
         st.markdown("""
-        <div style="text-align:center;padding:3rem;color:#06d6a0;font-size:1.3rem;font-weight:600">
-          ✅ No safety alerts at this time.<br>
-          <span style="font-size:1rem;color:#7fb3d3">All recorded water samples are within acceptable ranges.</span>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ── Alert thresholds config ──
-    st.markdown("---")
-    st.markdown("### ⚙️ Alert Threshold Configuration")
-    st.info("Customize the thresholds below for your specific monitoring requirements.")
-    col1, col2 = st.columns(2)
-    with col1:
-        ph_min = st.slider("pH Minimum", 5.0, 7.0, 6.5, 0.1)
-        ph_max = st.slider("pH Maximum", 7.5, 10.0, 8.5, 0.1)
-        turb_max = st.slider("Max Turbidity (NTU)", 1.0, 20.0, 4.0, 0.5)
-        do_min = st.slider("Min Dissolved O₂ (mg/L)", 2.0, 8.0, 5.0, 0.5)
-    with col2:
-        heavy_max = st.slider("Max Heavy Metals (mg/L)", 0.01, 1.0, 0.1, 0.01)
-        nit_max = st.slider("Max Nitrates (mg/L)", 1.0, 50.0, 10.0, 1.0)
-        tds_max = st.slider("Max TDS (mg/L)", 100.0, 2000.0, 500.0, 50.0)
-    if st.button("💾 Save Thresholds (Session)"):
-        st.success("✅ Thresholds updated for this session.")
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# PAGE: EDUCATION HUB
-# ═════════════════════════════════════════════════════════════════════════════
-elif page == "📚 Education Hub":
-    st.markdown("## 📚 Water Quality Education Hub")
-
-    tabs = st.tabs(["🧪 Parameters Guide", "🦠 Contaminants", "💊 Treatment Methods",
-                    "📖 WQI Explained", "🌍 Global Water Facts"])
-
-    with tabs[0]:
-        st.markdown("### 🧪 Understanding Water Quality Parameters")
-        params_info = {
-            "pH": {
-                "range": "6.5 – 8.5 (WHO)", "icon": "🔵",
-                "about": "pH measures how acidic or alkaline water is. A pH of 7 is neutral. Low pH (acidic) can corrode pipes and leach metals. High pH (alkaline) can cause scale buildup and taste issues.",
-                "effects": "Acidic water: metallic taste, pipe corrosion, skin irritation. Alkaline water: bitter taste, digestive issues."
-            },
-            "Turbidity": {
-                "range": "< 4 NTU (WHO)", "icon": "☁️",
-                "about": "Turbidity measures water cloudiness caused by suspended particles. High turbidity indicates potential pathogen presence and makes disinfection less effective.",
-                "effects": "High turbidity protects bacteria from chlorine disinfection, increasing infection risk."
-            },
-            "Dissolved Oxygen (DO)": {
-                "range": "≥ 5 mg/L", "icon": "💨",
-                "about": "DO is the amount of oxygen dissolved in water. Essential for aquatic life. Low DO indicates organic pollution or eutrophication.",
-                "effects": "DO < 5 mg/L: aquatic life stress. DO < 2 mg/L: dead zones, fish kills."
-            },
-            "Heavy Metals": {
-                "range": "< 0.1 mg/L (combined)", "icon": "⚙️",
-                "about": "Lead, mercury, arsenic, cadmium are toxic heavy metals from industrial pollution, old pipes, or natural deposits. They accumulate in the body over time.",
-                "effects": "Lead: brain damage in children, kidney disease. Mercury: neurological damage. Arsenic: cancer risk."
-            },
-            "Nitrates": {
-                "range": "< 10 mg/L (WHO)", "icon": "🌱",
-                "about": "Nitrates come from fertilizers, septic systems, and animal waste. They indicate agricultural or sewage contamination.",
-                "effects": "Blue Baby Syndrome (methemoglobinemia) in infants. Long-term: increased cancer risk."
-            },
-            "TDS (Total Dissolved Solids)": {
-                "range": "< 500 mg/L (WHO)", "icon": "🧂",
-                "about": "TDS measures all dissolved substances including minerals, salts, and metals. Affects taste and can indicate contamination.",
-                "effects": "High TDS: salty/bitter taste, scaling in appliances. Extremely low TDS: bland taste, potential mineral deficiency."
-            },
-        }
-        for param, info in params_info.items():
-            with st.expander(f"{info['icon']} {param} — Safe Range: {info['range']}"):
-                st.markdown(f"**About:** {info['about']}")
-                st.markdown(f"**Health Effects:** {info['effects']}")
-
-    with tabs[1]:
-        st.markdown("### 🦠 Common Water Contaminants")
-        contaminants = [
-            ("🦠 E. coli & Coliform Bacteria", "From human/animal waste. Causes diarrhoea, vomiting, cholera, typhoid.",
-             "Boiling, chlorination, UV disinfection, ozone treatment"),
-            ("🧪 Arsenic", "Natural deposits or industrial waste. Causes skin lesions, cancer, cardiovascular disease.",
-             "RO filtration, activated alumina, coagulation"),
-            ("🏭 Lead", "Old pipes, solder, paint. Severe neurological damage especially in children.",
-             "Filter replacement, pipe replacement, NSF-certified filters"),
-            ("💧 Fluoride (excess)", "Natural groundwater. Dental and skeletal fluorosis at high concentrations.",
-             "RO filtration, activated alumina, distillation"),
-            ("🌿 Pesticides", "Agricultural runoff. Liver/kidney damage, cancer, hormonal disruption.",
-             "Activated carbon filters, RO systems"),
-            ("🏗️ Nitrites/Nitrates", "Fertilizers, sewage. Blue baby syndrome, cancer risk.",
-             "RO filtration, ion exchange, distillation"),
-            ("🛢️ Petroleum Hydrocarbons", "Fuel spills, industrial leakage. Liver damage, cancer.",
-             "Activated carbon, air stripping, bioremediation"),
-        ]
-        for title, effects, treatment in contaminants:
-            st.markdown(f"""
-            <div class="tip-card">
-              <strong>{title}</strong><br>
-              <span style="color:#f77f00">⚠️ Health Effects:</span> {effects}<br>
-              <span style="color:#06d6a0">✅ Treatment:</span> {treatment}
-            </div>
-            """, unsafe_allow_html=True)
-
-    with tabs[2]:
-        st.markdown("### 💊 Water Treatment Methods")
-        methods = {
-            "🔥 Boiling": ("Kills bacteria, viruses, protozoa", "Doesn't remove chemicals, heavy metals, or dissolved solids", "Drinking water in emergencies"),
-            "🌡️ Chlorination": ("Kills most bacteria and viruses, residual protection", "Taste/odour, trihalomethanes formed, ineffective against cryptosporidium", "Municipal water treatment"),
-            "💡 UV Disinfection": ("Kills bacteria, viruses, protozoa without chemicals", "No residual protection, doesn't remove chemicals", "Point-of-use disinfection"),
-            "🔬 Reverse Osmosis (RO)": ("Removes 95–99% of dissolved contaminants including heavy metals, nitrates, TDS", "Wastes water (reject ratio 3:1), removes beneficial minerals", "Drinking water purification"),
-            "🪨 Activated Carbon": ("Removes chlorine, pesticides, odours, VOCs", "Doesn't remove heavy metals, nitrates, bacteria", "Pre-filter for taste/odour"),
-            "⚗️ Distillation": ("Removes most contaminants including heavy metals, bacteria", "Slow, energy intensive, removes minerals", "Laboratory, emergency use"),
-            "🧲 Coagulation & Flocculation": ("Removes turbidity, suspended particles, some heavy metals", "Doesn't remove dissolved contaminants, generates sludge", "Surface water treatment plants"),
-            "🌿 Biosand Filter": ("Removes bacteria, turbidity, some pathogens", "Slow, requires maintenance, no chemical removal", "Rural/community use"),
-        }
-        col1, col2 = st.columns(2)
-        for i, (method, (pros, cons, use)) in enumerate(methods.items()):
-            with col1 if i % 2 == 0 else col2:
-                with st.expander(method):
-                    st.markdown(f"✅ **Pros:** {pros}")
-                    st.markdown(f"❌ **Cons:** {cons}")
-                    st.markdown(f"🎯 **Best for:** {use}")
-
-    with tabs[3]:
-        st.markdown("### 📖 Water Quality Index (WQI) Explained")
-        st.markdown("""
-        The **Water Quality Index (WQI)** is a single number (0–100) that summarises multiple water quality parameters
-        into an easy-to-understand score, similar to an air quality index.
-        """)
-        grade_data = [
-            ("90–100", "Excellent", "#06d6a0", "Safe for all uses. Meets all WHO standards."),
-            ("75–89",  "Good",      "#90e0ef", "Safe to drink. Minor parameters may be slightly off."),
-            ("50–74",  "Fair",      "#f77f00", "Safe for most uses. Some treatment recommended."),
-            ("25–49",  "Poor",      "#ef476f", "Not safe to drink without treatment."),
-            ("0–24",   "Very Poor", "#ef233c", "Severely contaminated. Do NOT use without major treatment."),
-        ]
-        for score_range, grade, color, desc in grade_data:
-            st.markdown(f"""
-            <div style="background:rgba(0,0,0,0.3);border-left:5px solid {color};border-radius:8px;padding:0.8rem 1.2rem;margin-bottom:0.5rem">
-              <strong style="color:{color}">{grade} ({score_range})</strong><br>
-              <span style="color:#e0f4ff">{desc}</span>
-            </div>
-            """, unsafe_allow_html=True)
-
-        st.markdown("""
-        **How AquaSafe calculates WQI:**
-        Each parameter is normalised to a 0–100 score based on its deviation from the ideal value.
-        The final WQI is the weighted average of all parameter scores.
-        """)
-
-    with tabs[4]:
-        st.markdown("### 🌍 Global Water Facts")
-        facts = [
-            ("💧", "785 million people", "lack access to clean drinking water globally (WHO, 2023)"),
-            ("🦠", "2 billion people", "drink water contaminated with faeces"),
-            ("☠️", "3.5 million deaths", "occur annually due to waterborne diseases"),
-            ("👶", "1 child every 2 min", "dies from water-related diseases"),
-            ("🌊", "70%", "of Earth's surface is water, but only 3% is freshwater"),
-            ("🏙️", "1/3 of freshwater", "reserves are now critically depleted"),
-            ("🌡️", "Climate change", "will increase water scarcity for 5 billion people by 2050"),
-            ("💰", "$4.3 billion", "invested annually in water and sanitation globally — still far from enough"),
-        ]
-        for icon, stat, desc in facts:
-            st.markdown(f"""
-            <div class="tip-card">
-              {icon} <strong style="color:#00b4d8">{stat}</strong> — {desc}
-            </div>
-            """, unsafe_allow_html=True)
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# PAGE: SETTINGS
-# ═════════════════════════════════════════════════════════════════════════════
-elif page == "⚙️ Settings":
-    st.markdown("## ⚙️ Application Settings")
-
-    st.markdown("### 🎲 Demo Data")
-    col1, col2 = st.columns(2)
-    with col1:
-        demo_loc = st.text_input("Demo Location Name", value="Demo Station")
-        if st.button("🎲 Load Demo Data (60 records)", use_container_width=True):
-            demo = generate_demo_history(demo_loc)
-            st.session_state.history = demo  # replace, not extend
-            save_history(st.session_state.history)
-            st.success(f"✅ {len(demo)} demo records loaded! Go to Dashboard to see results.")
-            st.balloons()
-    with col2:
-        if st.button("🗑️ Clear All Data", use_container_width=True):
-            st.session_state.history = []
-            st.session_state.alerts = []
-            save_history([])
-            st.success("✅ All data cleared.")
-            st.rerun()
-
-    st.markdown("---")
-    st.markdown("### 📂 Data Management")
-    if st.session_state.history:
-        df_exp = pd.DataFrame(st.session_state.history)
-        csv = df_exp.to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Export All Data (CSV)", csv, "aquasafe_full_export.csv", "text/csv",
-                           use_container_width=True)
-
-    st.markdown("---")
-    st.markdown("### ℹ️ About AquaSafe")
-    st.markdown("""
-    <div class="section-card">
-      <div class="section-title">💧 AquaSafe – Water Quality Monitoring System v2.0</div>
-      <p>AquaSafe is a comprehensive water quality monitoring and analysis platform built with Streamlit.
-      It helps individuals, communities, and researchers track water quality over time using WHO-standard parameters.</p>
-      <br>
-      <b>Features:</b>
-      <ul>
-        <li>✅ 8-parameter water quality testing with WQI scoring</li>
-        <li>📊 Advanced analytics with trend charts, heatmaps, and distributions</li>
-        <li>⚠️ Real-time safety alerts and threshold configuration</li>
-        <li>🗺️ Location-based monitoring map</li>
-        <li>💡 Comprehensive daily tips for all life situations</li>
-        <li>📚 Education hub with contaminant guides and treatment methods</li>
-        <li>📜 Full history with CSV export</li>
-        <li>💾 Local JSON persistence</li>
-      </ul>
-      <br>
-      <b>Data Standards:</b> WHO Guidelines for Drinking-Water Quality (4th Edition)
-    </div>
-    """, unsafe_allow_html=True)
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# FOOTER
-# ─────────────────────────────────────────────────────────────────────────────
-st.markdown("---")
-st.markdown("""
-<div style="text-align:center;color:#7fb3d3;font-size:0.85rem;padding:1rem">
-  💧 <strong>AquaSafe</strong> — Water Quality Monitoring System |
-  Data based on <a href="https://www.who.int/publications/i/item/9789241549950" style="color:#00b4d8">WHO Guidelines</a> |
-  For educational purposes — always consult certified labs for official testing
-</div>
-""", unsafe_allow_html=True)
+        <div style="text-align:center;padding:3rem
