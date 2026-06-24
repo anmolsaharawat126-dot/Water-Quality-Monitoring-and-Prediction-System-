@@ -92,9 +92,9 @@ def wqi_score(ph, turb, do_, heavy, nitrates, tds, temp, chlorine):
     return round(np.mean(scores), 1)
 
 def wqi_grade(score):
-    if score >= 90: return "Excellent", "#10b981"
-    if score >= 75: return "Good",      "#0284c7"
-    if score >= 50: return "Fair",      "#f59e0b"
+    if score >= 90: return "Excellent", "#06d6a0"
+    if score >= 75: return "Good",      "#90e0ef"
+    if score >= 50: return "Fair",      "#f77f00"
     if score >= 25: return "Poor",      "#ef476f"
     return "Very Poor", "#ef233c"
 
@@ -119,94 +119,93 @@ st.markdown("""
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Poppins:wght@400;600;700;800&display=swap');
 :root {
-    --primary: #0284c7; --primary-dark: #0369a1; --secondary: #e0f2fe;
-    --danger: #ef233c; --warning: #f59e0b; --success: #10b981;
-    --bg-dark: #f8fafc; --bg-card: #ffffff; --bg-card2: #ffffff;
-    --text: #0f172a; --text-muted: #475569; --border: rgba(2,132,199,0.15);
+    --primary: #00b4d8; --primary-dark: #0077b6; --secondary: #90e0ef;
+    --danger: #ef233c; --warning: #f77f00; --success: #06d6a0;
+    --bg-dark: #03071e; --bg-card: #0a1628; --bg-card2: #0d1f3c;
+    --text: #e0f4ff; --text-muted: #7fb3d3; --border: rgba(0,180,216,0.18);
 }
 html, body, [class*="css"] {
     font-family: 'Inter', sans-serif !important;
     background-color: var(--bg-dark) !important; color: var(--text) !important;
 }
 iframe[title="streamlit_folium.st_folium"] {
-    border-radius: 12px !important; border: 1px solid rgba(2,132,199,0.2) !important;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important; background-color: #ffffff !important;
+    border-radius: 12px !important; border: 1px solid rgba(0,180,216,0.3) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important; background-color: #0a1628 !important;
 }
 [data-testid="stSidebar"] {
-    background: linear-gradient(180deg, #f0f9ff 0%, #e0f2fe 100%) !important;
+    background: linear-gradient(180deg, #03071e 0%, #023e8a 100%) !important;
     border-right: 1px solid var(--border) !important;
 }
 [data-testid="stSidebar"] * { color: var(--text) !important; }
-.stApp { background: radial-gradient(ellipse at top, #e0f2fe 0%, #f8fafc 80%) !important; }
+.stApp { background: radial-gradient(ellipse at top, #03185a 0%, #03071e 60%) !important; }
 .hero-banner {
-    background: linear-gradient(135deg, #0369a1 0%, #0284c7 50%, #38bdf8 100%);
+    background: linear-gradient(135deg, #023e8a 0%, #0096c7 50%, #00b4d8 100%);
     border-radius: 20px; padding: 2rem 2.5rem; margin-bottom: 2rem;
-    box-shadow: 0 10px 30px rgba(2,132,199,0.15); position: relative; overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,180,216,0.3); position: relative; overflow: hidden;
 }
 .hero-title {
     font-family: 'Poppins', sans-serif !important; font-size: 2.5rem !important;
     font-weight: 800 !important; color: #fff !important; margin: 0 !important;
-    text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    text-shadow: 0 2px 20px rgba(0,0,0,0.3);
 }
-.hero-sub { font-size: 1.05rem; color: rgba(255,255,255,0.9); margin-top: 0.5rem; }
+.hero-sub { font-size: 1.05rem; color: rgba(255,255,255,0.85); margin-top: 0.5rem; }
 .hero-badge {
-    display: inline-block; background: rgba(255,255,255,0.25);
-    border: 1px solid rgba(255,255,255,0.35); border-radius: 50px;
+    display: inline-block; background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3); border-radius: 50px;
     padding: 4px 16px; font-size: 0.8rem; color: #fff; margin-bottom: 0.8rem;
     backdrop-filter: blur(10px);
 }
 .metric-card {
-    background: #ffffff;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card2) 100%);
     border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.05); transition: transform 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0,180,216,0.1); transition: transform 0.3s ease;
     position: relative; overflow: hidden;
 }
 .metric-card::before {
     content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
     background: linear-gradient(90deg, var(--primary), var(--secondary));
 }
-.metric-card:hover { transform: translateY(-4px); box-shadow: 0 10px 30px rgba(0,0,0,0.08); }
+.metric-card:hover { transform: translateY(-4px); }
 .metric-icon { font-size: 2.2rem; margin-bottom: 0.4rem; }
 .metric-value { font-size: 1.8rem; font-weight: 700; color: var(--primary); }
 .metric-label { font-size: 0.85rem; color: var(--text-muted); }
 .metric-status-ok { color: var(--success) !important; }
 .metric-status-bad { color: var(--danger) !important; }
 .section-card {
-    background: #ffffff;
+    background: linear-gradient(135deg, var(--bg-card) 0%, var(--bg-card2) 100%);
     border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; margin-bottom: 1.5rem;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.04);
 }
 .section-title {
     font-family: 'Poppins', sans-serif; font-size: 1.25rem; font-weight: 600;
     color: var(--primary); margin-bottom: 0.8rem; display: flex; align-items: center; gap: 0.5rem;
 }
 .safe-banner {
-    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05)); border: 2px solid #10b981;
+    background: linear-gradient(135deg, #06d6a044, #06d6a011); border: 2px solid #06d6a0;
     border-radius: 16px; padding: 1.2rem; text-align: center; font-size: 1.6rem; font-weight: 700;
-    color: #10b981; box-shadow: 0 4px 20px rgba(16,185,129,0.15);
+    color: #06d6a0; box-shadow: 0 0 25px rgba(6,214,160,0.25);
 }
 .unsafe-banner {
-    background: linear-gradient(135deg, rgba(239,35,60,0.15), rgba(239,35,60,0.05)); border: 2px solid #ef233c;
+    background: linear-gradient(135deg, #ef233c44, #ef233c11); border: 2px solid #ef233c;
     border-radius: 16px; padding: 1.2rem; text-align: center; font-size: 1.6rem; font-weight: 700;
-    color: #ef233c; box-shadow: 0 4px 20px rgba(239,35,60,0.15);
+    color: #ef233c; box-shadow: 0 0 25px rgba(239,35,60,0.25);
 }
 .tip-card {
-    background: #f0f9ff;
-    border: 1px solid #bae6fd; border-radius: 12px; padding: 0.9rem 1.1rem;
-    margin-bottom: 0.7rem; font-size: 0.9rem; line-height: 1.4; color: #0369a1;
+    background: linear-gradient(135deg, rgba(0,180,216,0.12), rgba(0,119,182,0.08));
+    border: 1px solid rgba(0,180,216,0.3); border-radius: 12px; padding: 0.9rem 1.1rem;
+    margin-bottom: 0.7rem; font-size: 0.9rem; line-height: 1.4; color: var(--text);
 }
-.tip-card strong { color: var(--primary-dark); }
+.tip-card strong { color: var(--primary); }
 .styled-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-.styled-table td { padding: 8px 12px; border-bottom: 1px solid #e2e8f0; color: #334155; }
+.styled-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); color: var(--text); }
 .stButton > button {
-    background: linear-gradient(135deg, #0284c7, #38bdf8) !important; color: #fff !important;
+    background: linear-gradient(135deg, #0096c7, #00b4d8) !important; color: #fff !important;
     border: none !important; border-radius: 12px !important; padding: 0.6rem 1.8rem !important;
-    font-weight: 600 !important; box-shadow: 0 4px 15px rgba(2,132,199,0.2) !important;
+    font-weight: 600 !important; box-shadow: 0 4px 15px rgba(0,180,216,0.25) !important;
 }
-.stButton > button:hover { transform: translateY(-2px) !important; box-shadow: 0 6px 20px rgba(2,132,199,0.3) !important; }
+.stButton > button:hover { transform: translateY(-2px) !important; }
 .sidebar-logo {
     font-family: 'Poppins', sans-serif; font-size: 1.5rem; font-weight: 800;
-    color: var(--primary-dark); text-align: center; padding: 0.8rem 0; letter-spacing: 1px;
+    color: var(--primary); text-align: center; padding: 0.8rem 0; letter-spacing: 1px;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -337,17 +336,17 @@ if page == "🏠 Dashboard":
             fig = go.Figure(go.Indicator(
                 mode="gauge+number", value=float(last["wqi"]),
                 domain={"x": [0, 1], "y": [0, 1]},
-                title={"text": f"WQI Index - 📍 {last['location']}", "font": {"color": "#0f172a", "size": 16}},
+                title={"text": f"WQI Index - 📍 {last['location']}", "font": {"color": "#e0f4ff", "size": 16}},
                 number={"font": {"color": color, "size": 48}, "suffix": " /100"},
                 gauge={
-                    "axis": {"range": [0, 100], "tickcolor": "#475569"},
-                    "bar": {"color": color, "thickness": 0.28}, "bgcolor": "#f1f5f9",
-                    "borderwidth": 2, "bordercolor": "#0284c7",
+                    "axis": {"range": [0, 100], "tickcolor": "#7fb3d3"},
+                    "bar": {"color": color, "thickness": 0.28}, "bgcolor": "#0a1628",
+                    "borderwidth": 2, "bordercolor": "#00b4d8",
                     "steps": [
                         {"range": [0, 25], "color": "rgba(239,35,60,0.15)"},
                         {"range": [25, 50], "color": "rgba(247,127,0,0.15)"},
                         {"range": [50, 75], "color": "rgba(144,224,239,0.1)"},
-                        {"range": [75, 100], "color": "rgba(16,185,129,0.15)"}
+                        {"range": [75, 100], "color": "rgba(6,214,160,0.15)"}
                     ]
                 }
             ))
@@ -366,7 +365,7 @@ if page == "🏠 Dashboard":
                 <tr><td><b>TDS</b></td><td>{last['tds']} mg/L</td><td>{check_param(last['tds'], 0, 500)}</td></tr>
               </table>
               <br/>
-              <div style="text-align:center;padding:0.7rem;background:{'rgba(16,185,129,0.15)' if last['safe'] else 'rgba(239,35,60,0.15)'};border-radius:10px;border:1px solid {'#10b981' if last['safe'] else '#ef233c'};font-weight:700;color:{'#10b981' if last['safe'] else '#ef233c'}">
+              <div style="text-align:center;padding:0.7rem;background:{'rgba(6,214,160,0.15)' if last['safe'] else 'rgba(239,35,60,0.15)'};border-radius:10px;border:1px solid {'#06d6a0' if last['safe'] else '#ef233c'};font-weight:700;color:{'#06d6a0' if last['safe'] else '#ef233c'}">
                 {'✅ WATER IS SAFE' if last['safe'] else '❌ WATER NOT SAFE'}
               </div>
             </div>
@@ -384,11 +383,11 @@ if page == "🏠 Dashboard":
         fig2 = go.Figure()
         fig2.add_trace(go.Scatter(
             x=df["timestamp"], y=df["wqi"], mode="lines+markers",
-            line=dict(color="#0284c7", width=3),
-            marker=dict(size=8, color=df["wqi"], colorscale=[[0,"#ef233c"],[0.5,"#f59e0b"],[1,"#10b981"]]),
-            fill="tozeroy", fillcolor="rgba(2,132,199,0.08)"
+            line=dict(color="#00b4d8", width=3),
+            marker=dict(size=8, color=df["wqi"], colorscale=[[0,"#ef233c"],[0.5,"#f77f00"],[1,"#06d6a0"]]),
+            fill="tozeroy", fillcolor="rgba(0,180,216,0.08)"
         ))
-        fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#0f172a"), height=260, margin=dict(t=10, b=10))
+        fig2.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#e0f4ff"), height=260, margin=dict(t=10, b=10))
         st.plotly_chart(fig2, use_container_width=True)
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -475,11 +474,11 @@ elif page == "🔮 AI Predictor":
     with tab_health:
         st.markdown("### Scikit-Learn RandomForest Model Health")
         cm_df = pd.DataFrame(model_cm, index=["Actual Unsafe", "Actual Safe"], columns=["Predicted Unsafe", "Predicted Safe"])
-        fig_cm = px.imshow(cm_df, text_auto=True, color_continuous_scale=[[0, "#f8fafc"], [1, "#0284c7"]])
-        fig_cm.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#0f172a"), height=250)
+        fig_cm = px.imshow(cm_df, text_auto=True, color_continuous_scale=[[0, "#0a1628"], [1, "#00b4d8"]])
+        fig_cm.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=250)
         
-        fig_feat = px.bar(model_feat, x="Importance", y="Feature", orientation="h", color="Importance", color_continuous_scale=[[0, "#bae6fd"], [1, "#0369a1"]])
-        fig_feat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", font=dict(color="#0f172a"), height=280)
+        fig_feat = px.bar(model_feat, x="Importance", y="Feature", orientation="h", color="Importance", color_continuous_scale=[[0, "#90e0ef"], [1, "#0077b6"]])
+        fig_feat.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=280)
         
         col_c1, col_c2 = st.columns(2)
         with col_c1: st.plotly_chart(fig_cm, use_container_width=True)
@@ -498,8 +497,8 @@ elif page == "📊 Analytics":
         st.markdown("### Summary Statistics")
         st.dataframe(df.describe().round(2), use_container_width=True)
         
-        fig_p = px.pie(df, names="safe", color="safe", color_discrete_map={True: "#10b981", False: "#ef233c"}, hole=0.5)
-        fig_p.update_layout(paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#0f172a"), height=280)
+        fig_p = px.pie(df, names="safe", color="safe", color_discrete_map={True: "#06d6a0", False: "#ef233c"}, hole=0.5)
+        fig_p.update_layout(paper_bgcolor="rgba(0,0,0,0)", height=280)
         st.plotly_chart(fig_p, use_container_width=True)
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -567,14 +566,14 @@ elif page == "🗺️ Location Map":
             with c_m1:
                 st.markdown(f"""
                 <div>
-                    <div style="font-size: 11px; color:#475569;">Est. WQI Score</div>
-                    <span style="font-size: 40px; font-weight: 800; color:#0f172a;">{row_match['avg_wqi']:.1f}</span>
+                    <div style="font-size: 11px; color:#cbd5e1;">Est. WQI Score</div>
+                    <span style="font-size: 40px; font-weight: 800; color:#fff;">{row_match['avg_wqi']:.1f}</span>
                 </div>
                 """, unsafe_allow_html=True)
             with c_m2:
                 st.markdown(f"""
                 <div>
-                    <div style="font-size: 11px; color:#475569;">Safety Status</div>
+                    <div style="font-size: 11px; color:#cbd5e1;">Safety Status</div>
                     <span style="font-size: 32px; font-weight: 700; color:{color};">{row_match['status_label']}</span>
                 </div>
                 """, unsafe_allow_html=True)
@@ -590,7 +589,7 @@ elif page == "🗺️ Location Map":
             }).sort_values("Contribution")
             
             fig_sh = px.bar(shap_df, x="Contribution", y="Feature", orientation="h", color="Contribution", color_continuous_scale="RdBu_r", height=180)
-            fig_sh.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#0f172a"), coloraxis_showscale=False, margin=dict(l=80, r=10, t=10, b=10))
+            fig_sh.update_layout(plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)", coloraxis_showscale=False, margin=dict(l=80, r=10, t=10, b=10))
             st.plotly_chart(fig_sh, use_container_width=True)
 
         with tab_sim:
@@ -612,7 +611,7 @@ elif page == "🗺️ Location Map":
                     st.rerun()
 
     with col_map:
-        m = folium.Map(location=[float(locations_display["lat"].mean()), float(locations_display["lon"].mean())], zoom_start=5, tiles="cartodbpositron")
+        m = folium.Map(location=[float(locations_display["lat"].mean()), float(locations_display["lon"].mean())], zoom_start=5, tiles="cartodbdark_matter")
         
         # Draw connections
         for i in range(len(locations_display)):
@@ -620,7 +619,7 @@ elif page == "🗺️ Location Map":
                 p1 = [locations_display.iloc[i]["lat"], locations_display.iloc[i]["lon"]]
                 p2 = [locations_display.iloc[j]["lat"], locations_display.iloc[j]["lon"]]
                 if np.sqrt((p1[0]-p2[0])**2 + (p1[1]-p2[1])**2) < 6.5:
-                    folium.PolyLine(locations=[p1, p2], color="#0284c7", weight=1.2, opacity=0.15).add_to(m)
+                    folium.PolyLine(locations=[p1, p2], color="#00b4d8", weight=1.2, opacity=0.15).add_to(m)
                     
         for _, row in locations_display.iterrows():
             is_sel = (row["location"] == st.session_state.selected_station)
@@ -763,4 +762,4 @@ elif page == "⚙️ Settings":
             st.rerun()
 
 st.markdown("---")
-st.markdown("<div style='text-align:center; color:#475569; font-size:0.8rem;'>💧 AquaSafe Monitoring System | Based on WHO Guidelines</div>", unsafe_allow_html=True)
+st.markdown("<div style='text-align:center; color:#7fb3d3; font-size:0.8rem;'>💧 AquaSafe Monitoring System | Based on WHO Guidelines</div>", unsafe_allow_html=True)
