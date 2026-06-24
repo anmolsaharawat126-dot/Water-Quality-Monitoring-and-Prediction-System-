@@ -612,7 +612,6 @@ elif page == "🗺️ Location Map":
 
     with col_map:
         m = folium.Map(location=[float(locations_display["lat"].mean()), float(locations_display["lon"].mean())], zoom_start=5, tiles="cartodbdark_matter")
-        marker_cluster = MarkerCluster().add_to(m)
         
         # Draw connections
         for i in range(len(locations_display)):
@@ -679,7 +678,7 @@ elif page == "🗺️ Location Map":
                     icon_size=marker_size,
                     icon_anchor=(marker_size[0]//2, marker_size[1]//2)
                 )
-            ).add_to(marker_cluster)
+            ).add_to(m)
             
         if st.session_state.sim_active:
             folium.Circle(location=[epi_lat, epi_lon], radius=st.session_state.sim_radius*111000, color="#ef233c", fill=True, fill_opacity=0.15).add_to(m)
