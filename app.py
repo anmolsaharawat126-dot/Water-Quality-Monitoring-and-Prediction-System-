@@ -1,47 +1,36 @@
-print("WATER QUALITY CHECK SYSTEM")
-print("--------------------------")
+import streamlit as st
 
-# taking input from user
-name = input("Enter sample location name: ")
+st.set_page_config(page_title="Water Quality Monitoring System", page_icon="💧")
 
-ph = float(input("Enter pH value: "))
-turbidity = float(input("Enter turbidity value: "))
-do = float(input("Enter dissolved oxygen: "))
-heavy = float(input("Enter heavy metal value: "))
+st.title("💧 Water Quality Monitoring & Prediction System")
 
-print("\nChecking water quality...\n")
+name = st.text_input("Sample Location")
 
-# simple logic (no AI, just if-else)
+ph = st.number_input("pH Value", value=7.0)
+turbidity = st.number_input("Turbidity", value=1.0)
+do = st.number_input("Dissolved Oxygen", value=6.0)
+heavy = st.number_input("Heavy Metal Concentration", value=0.05)
 
-if ph >= 6.5 and ph <= 8.5:
-    ph_status = "OK"
-else:
-    ph_status = "NOT OK"
+if st.button("Check Water Quality"):
 
-if turbidity < 5:
-    turb_status = "OK"
-else:
-    turb_status = "NOT OK"
+    ph_status = "OK" if 6.5 <= ph <= 8.5 else "NOT OK"
+    turb_status = "OK" if turbidity < 5 else "NOT OK"
+    do_status = "OK" if do >= 5 else "NOT OK"
+    heavy_status = "OK" if heavy < 0.1 else "NOT OK"
 
-if do >= 5:
-    do_status = "OK"
-else:
-    do_status = "NOT OK"
+    st.subheader(f"Results for: {name}")
 
-if heavy < 0.1:
-    heavy_status = "OK"
-else:
-    heavy_status = "NOT OK"
+    st.write("pH Status:", ph_status)
+    st.write("Turbidity Status:", turb_status)
+    st.write("Dissolved Oxygen Status:", do_status)
+    st.write("Heavy Metals Status:", heavy_status)
 
-print("RESULT FOR:", name)
-print("--------------------------")
-print("pH Status:", ph_status)
-print("Turbidity Status:", turb_status)
-print("Dissolved Oxygen Status:", do_status)
-print("Heavy Metals Status:", heavy_status)
-
-# final decision
-if ph_status == "OK" and turb_status == "OK" and do_status == "OK" and heavy_status == "OK":
-    print("\nFINAL RESULT: WATER IS SAFE ✅")
-else:
-    print("\nFINAL RESULT: WATER IS NOT SAFE ❌")
+    if (
+        ph_status == "OK"
+        and turb_status == "OK"
+        and do_status == "OK"
+        and heavy_status == "OK"
+    ):
+        st.success("✅ WATER IS SAFE")
+    else:
+        st.error("❌ WATER IS NOT SAFE")
