@@ -124,6 +124,14 @@ html, body, [class*="css"] {
     color: var(--text) !important;
 }
 
+/* Premium Folium Map Container */
+iframe[title="streamlit_folium.st_folium"] {
+    border-radius: 12px !important;
+    border: 1px solid rgba(0,180,216,0.3) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4) !important;
+    background-color: #0a1628 !important;
+}
+
 /* ── Sidebar ── */
 [data-testid="stSidebar"] {
     background: linear-gradient(180deg, #03071e 0%, #023e8a 100%) !important;
@@ -1254,41 +1262,53 @@ elif page == "🗺️ Location Map":
             col_met1, col_met2 = st.columns(2)
             with col_met1:
                 st.markdown(f"""
-                <div style="margin-bottom:1rem;">
-                    <div style="font-size: 0.75rem; color: #7fb3d3; text-transform: uppercase; font-weight: 600;">Est. Score</div>
-                    <div style="font-size: 1.8rem; font-weight: 800; color: #e0f4ff;">{wqi_val:.1f} WQI</div>
+                <div style="font-family: 'Inter', sans-serif; margin-bottom: 15px;">
+                    <div style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Est. WQI Score</div>
+                    <div style="display: flex; align-items: baseline; gap: 4px;">
+                        <span style="font-size: 48px; font-weight: 800; color: #ffffff; line-height: 1;">{wqi_val:.1f}</span>
+                        <span style="font-size: 18px; color: #94a3b8; font-weight: 500;">WQI</span>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
             with col_met2:
                 # safety prob from ML confidence or simple score
                 safe_pct = latest_record["safe_pct"] if "safe_pct" in latest_record else (wqi_val if safe else 100 - wqi_val)
                 st.markdown(f"""
-                <div style="margin-bottom:1rem;">
-                    <div style="font-size: 0.75rem; color: #7fb3d3; text-transform: uppercase; font-weight: 600;">Safety / Closure Prob</div>
-                    <div style="font-size: 1.8rem; font-weight: 800; color: #06d6a0;">{safe_pct:.0f}%</div>
+                <div style="font-family: 'Inter', sans-serif; margin-bottom: 15px;">
+                    <div style="font-size: 12px; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Safety Probability</div>
+                    <div style="font-size: 48px; font-weight: 800; color: #06d6a0; line-height: 1;">{safe_pct:.0f}%</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
             # Suggested Deployment
             if wqi_val >= 75:
-                deploy_msg = "🌿 None | ✅ Safe for immediate use"
-                req_actions = "None (Monitor parameters regularly)"
+                deploy_msg = "Safe Water"
+                req_badge = "<span style='background-color: #10b98122; color: #10b981; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;'>No action required</span>"
             elif wqi_val >= 50:
-                deploy_msg = "🪨 Carbon Filter | 🌡️ Boil before drinking"
-                req_actions = "Sediment cloth filtration & boiling"
+                deploy_msg = "Boil & Carbon Filter"
+                req_badge = "<span style='background-color: #f59e0b22; color: #f59e0b; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;'>Boiling Recommended</span>"
             else:
-                deploy_msg = "🔬 Reverse Osmosis (RO) | 🧪 Disinfection"
-                req_actions = "DANGER: Boiling insufficient, RO required"
+                deploy_msg = "RO Filtration & Disinfection"
+                req_badge = "<span style='background-color: #ef444422; color: #ef4444; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase;'>DANGER: RO Required</span>"
                 
-            st.markdown(f"""
-            <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; margin-bottom: 1.2rem; font-size: 0.85rem;">
-                <strong>Suggested Deployment:</strong> 🧪 {deploy_msg}<br/>
-                <strong style="color:#ef233c;">Required:</strong> {req_actions}
+            deployment_html = f"""
+            <div style="font-size: 14px; font-family: 'Inter', sans-serif; color: #ffffff; margin-bottom: 25px; display: flex; align-items: center; flex-wrap: wrap; gap: 6px; line-height: 1.6;">
+                <strong>Suggested Treatment:</strong> 
+                <span>🧪 <span style="color: #00b4d8; font-weight: 700;">{deploy_msg}</span></span>
+                <span style="color: #475569; margin: 0 4px;">|</span>
+                <span>⚠️ {req_badge}</span>
             </div>
-            """, unsafe_allow_html=True)
+            """
+            st.markdown(deployment_html, unsafe_allow_html=True)
             
-            # SHAP Decision Contribution
-            st.markdown("<div style='font-size: 0.9rem; font-weight: 700; color: #e0f4ff; margin-bottom: 0.5rem;'>🧠 Decision Contribution (SHAP)</div>", unsafe_allow_html=True)
+            # SHAP Header with brain icon
+            shap_header_html = """
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; margin-top: 15px;">
+                <span style="font-size: 20px;">🧠</span>
+                <span style="font-size: 18px; font-weight: 700; color: #ffffff; font-family: 'Inter', sans-serif;">Decision Contribution (SHAP)</span>
+            </div>
+            """
+            st.markdown(shap_header_html, unsafe_allow_html=True)
             
             # Calculate drops
             r_ph = latest_record.get("ph", 7.0)
@@ -1327,16 +1347,27 @@ elif page == "🗺️ Location Map":
                 y="Feature",
                 orientation="h",
                 color="Contribution",
-                color_continuous_scale=[[0, "rgba(0,180,216,0.3)"], [0.5, "#f77f00"], [1, "#ef233c"]],
+                color_continuous_scale="RdBu_r",
                 height=220
             )
             fig_shap.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)",
                 plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e0f4ff", size=10),
-                xaxis=dict(gridcolor="rgba(0,180,216,0.1)", title="Risk Impact"),
-                yaxis=dict(title=None),
-                margin=dict(t=5, b=5, l=5, r=5),
+                paper_bgcolor="rgba(0,0,0,0)",
+                margin=dict(l=140, r=10, t=10, b=30),
+                xaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    showline=False,
+                    tickfont=dict(color="#94a3b8", size=11, family="Inter"),
+                    title=None
+                ),
+                yaxis=dict(
+                    showgrid=False,
+                    zeroline=False,
+                    showline=False,
+                    tickfont=dict(color="#cbd5e1", size=12, family="Inter"),
+                    title=None
+                ),
                 coloraxis_showscale=False
             )
             st.plotly_chart(fig_shap, use_container_width=True)
@@ -1414,12 +1445,29 @@ elif page == "🗺️ Location Map":
             "Very Poor": "darkred"
         }
         for _, row in locations_display.iterrows():
-            icon_color = color_map.get(row["grade"], "blue")
+            is_selected = (row["location"] == st.session_state.selected_station)
+            icon_type = "star" if is_selected else "info-sign"
+            
+            if is_selected:
+                icon_color = "orange"
+            else:
+                icon_color = color_map.get(row["grade"], "blue")
+                
+            popup_html = f"""
+            <div style="font-family: 'Inter', sans-serif; font-size: 13px; color: #1e293b; line-height: 1.4;">
+                <h4 style="margin: 0 0 6px 0; color: #00b4d8; font-weight: 700;">📍 {row['location']}</h4>
+                <b>Average WQI</b>: {row['avg_wqi']:.1f}<br/>
+                <b>Grade</b>: {row['grade']}<br/>
+                <b>Safety Status</b>: {row['status_label']}<br/>
+                <b>Total Tests</b>: {int(row['tests'])}<br/>
+            </div>
+            """
+            
             folium.Marker(
                 location=[row["lat"], row["lon"]],
-                popup=f"📍 {row['location']}<br/>WQI: {row['avg_wqi']:.1f} ({row['grade']})",
+                popup=folium.Popup(popup_html, max_width=300),
                 tooltip=row["location"],
-                icon=folium.Icon(color=icon_color, icon="info-sign")
+                icon=folium.Icon(color=icon_color, icon=icon_type)
             ).add_to(marker_cluster)
             
         # Draw simulation epicenter wave
@@ -1514,7 +1562,7 @@ elif page == "🗺️ Location Map":
                     </div>
                   </div>
                   <div style="margin-top:0.7rem;background:rgba(0,0,0,0.3);
-                              border-radius:6px;height:6px;overflow:hidden">
+                               border-radius:6px;height:6px;overflow:hidden">
                     <div style="width:{min(loc['avg_wqi'],100)}%;height:100%;
                                 background:linear-gradient(90deg,{g_color}88,{g_color});
                                 border-radius:6px"></div>
