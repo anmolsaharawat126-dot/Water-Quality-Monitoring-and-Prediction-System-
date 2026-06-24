@@ -611,7 +611,7 @@ elif page == "🗺️ Location Map":
                     st.rerun()
 
     with col_map:
-        m = folium.Map(location=[float(locations_display["lat"].mean()), float(locations_display["lon"].mean())], zoom_start=5, tiles="cartodbdark_matter")
+        m = folium.Map(location=[float(locations_display["lat"].mean()), float(locations_display["lon"].mean())], zoom_start=5, tiles="cartodbpositron")
         
         # Draw connections
         for i in range(len(locations_display)):
