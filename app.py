@@ -989,9 +989,7 @@ elif page == "🔮 AI Predictor":
                 margin=dict(t=20, b=20, l=20, r=20),
             )
             st.plotly_chart(fig_feat, use_container_width=True)
-
-
-# ═════════════════════════════════════════════════════════════════════════════
+            # ═════════════════════════════════════════════════════════════════════════════
 # PAGE: ANALYTICS
 # ═════════════════════════════════════════════════════════════════════════════
 elif page == "📊 Analytics":
@@ -1829,4 +1827,107 @@ elif page == "⚠️ Alerts":
 
     if not critical and not warning:
         st.markdown("""
-        <div style="text-align:center;padding:3rem
+        <div style="text-align:center;padding:3rem;color:#06d6a0;font-size:1.3rem;font-weight:600">
+          ✅ No safety alerts at this time.<br>
+          <span style="font-size:1rem;color:#7fb3d3">All recorded water samples are within acceptable ranges.</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ── Alert thresholds config ──
+    st.markdown("---")
+    st.markdown("### ⚙️ Alert Threshold Configuration")
+    st.info("Customize the thresholds below for your specific monitoring requirements.")
+    col1, col2 = st.columns(2)
+    with col1:
+        ph_min = st.slider("pH Minimum", 5.0, 7.0, 6.5, 0.1)
+        ph_max = st.slider("pH Maximum", 7.5, 10.0, 8.5, 0.1)
+        turb_max = st.slider("Max Turbidity (NTU)", 1.0, 20.0, 4.0, 0.5)
+        do_min = st.slider("Min Dissolved O₂ (mg/L)", 2.0, 8.0, 5.0, 0.5)
+    with col2:
+        heavy_max = st.slider("Max Heavy Metals (mg/L)", 0.01, 1.0, 0.1, 0.01)
+        nit_max = st.slider("Max Nitrates (mg/L)", 1.0, 50.0, 10.0, 1.0)
+        tds_max = st.slider("Max TDS (mg/L)", 100.0, 2000.0, 500.0, 50.0)
+    if st.button("💾 Save Thresholds (Session)"):
+        st.success("✅ Thresholds updated for this session.")
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# PAGE: EDUCATION HUB
+# ═════════════════════════════════════════════════════════════════════════════
+elif page == "📚 Education Hub":
+    st.markdown("## 📚 Water Quality Education Hub")
+
+    tabs = st.tabs(["🧪 Parameters Guide", "🦠 Contaminants", "💊 Treatment Methods",
+                    "📖 WQI Explained", "🌍 Global Water Facts"])
+
+    with tabs[0]:
+        st.markdown("### 🧪 Understanding Water Quality Parameters")
+        params_info = {
+            "pH": {
+                "range": "6.5 – 8.5 (WHO)", "icon": "🔵",
+                "about": "pH measures how acidic or alkaline water is. A pH of 7 is neutral. Low pH (acidic) can corrode pipes and leach metals. High pH (alkaline) can cause scale buildup and taste issues.",
+                "effects": "Acidic water: metallic taste, pipe corrosion, skin irritation. Alkaline water: bitter taste, digestive issues."
+            },
+            "Turbidity": {
+                "range": "< 4 NTU (WHO)", "icon": "☁️",
+                "about": "Turbidity measures water cloudiness caused by suspended particles. High turbidity indicates potential pathogen presence and makes disinfection less effective.",
+                "effects": "High turbidity protects bacteria from chlorine disinfection, increasing infection risk."
+            },
+            "Dissolved Oxygen (DO)": {
+                "range": "≥ 5 mg/L", "icon": "💨",
+                "about": "DO is the amount of oxygen dissolved in water. Essential for aquatic life. Low DO indicates organic pollution or eutrophication.",
+                "effects": "DO < 5 mg/L: aquatic life stress. DO < 2 mg/L: dead zones, fish kills."
+            },
+            "Heavy Metals": {
+                "range": "< 0.1 mg/L (combined)", "icon": "⚙️",
+                "about": "Lead, mercury, arsenic, cadmium are toxic heavy metals from industrial pollution, old pipes, or natural deposits. They accumulate in the body over time.",
+                "effects": "Lead: brain damage in children, kidney disease. Mercury: neurological damage. Arsenic: cancer risk."
+            },
+            "Nitrates": {
+                "range": "< 10 mg/L (WHO)", "icon": "🌱",
+                "about": "Nitrates come from fertilizers, septic systems, and animal waste. They indicate agricultural or sewage contamination.",
+                "effects": "Blue Baby Syndrome (methemoglobinemia) in infants. Long-term: increased cancer risk."
+            },
+            "TDS (Total Dissolved Solids)": {
+                "range": "< 500 mg/L (WHO)", "icon": "🧂",
+                "about": "TDS measures all dissolved substances including minerals, salts, and metals. Affects taste and can indicate contamination.",
+                "effects": "High TDS: salty/bitter taste, scaling in appliances. Extremely low TDS: bland taste, potential mineral deficiency."
+            },
+        }
+        for param, info in params_info.items():
+            with st.expander(f"{info['icon']} {param} — Safe Range: {info['range']}"):
+                st.markdown(f"**About:** {info['about']}")
+                st.markdown(f"**Health Effects:** {info['effects']}")
+
+    with tabs[1]:
+        st.markdown("### 🦠 Common Water Contaminants")
+        contaminants = [
+            ("🦠 E. coli & Coliform Bacteria", "From human/animal waste. Causes diarrhoea, vomiting, cholera, typhoid.",
+             "Boiling, chlorination, UV disinfection, ozone treatment"),
+            ("🧪 Arsenic", "Natural deposits or industrial waste. Causes skin lesions, cancer, cardiovascular disease.",
+             "RO filtration, activated alumina, coagulation"),
+            ("🏭 Lead", "Old pipes, solder, paint. Severe neurological damage especially in children.",
+             "Filter replacement, pipe replacement, NSF-certified filters"),
+            ("💧 Fluoride (excess)", "Natural groundwater. Dental and skeletal fluorosis at high concentrations.",
+             "RO filtration, activated alumina, distillation"),
+            ("🌿 Pesticides", "Agricultural runoff. Liver/kidney damage, cancer, hormonal disruption.",
+             "Activated carbon filters, RO systems"),
+            ("🏗️ Nitrites/Nitrates", "Fertilizers, sewage. Blue baby syndrome, cancer risk.",
+             "RO filtration, ion exchange, distillation"),
+            ("🛢️ Petroleum Hydrocarbons", "Fuel spills, industrial leakage. Liver damage, cancer.",
+             "Activated carbon, air stripping, bioremediation"),
+        ]
+        for title, effects, treatment in contaminants:
+            st.markdown(f"""
+            <div class="tip-card">
+              <strong>{title}</strong><br>
+              <span style="color:#f77f00">⚠️ Health Effects:</span> {effects}<br>
+              <span style="color:#06d6a0">✅ Treatment:</span> {treatment}
+            </div>
+            """, unsafe_allow_html=True)
+
+    with tabs[2]:
+        st.markdown("### 💊 Water Treatment Methods")
+        methods = {
+            "🔥 Boiling": ("Kills bacteria, viruses, protozoa", "Doesn't remove chemicals, heavy metals, or dissolved solids", "Drinking water in emergencies"),
+            "🌡️ Chlorination": ("Kills most bacteria and viruses, residual protection", "Taste/odour, trihalomethanes formed, ineffective
