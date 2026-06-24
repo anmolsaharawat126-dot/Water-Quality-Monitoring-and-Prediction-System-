@@ -681,7 +681,7 @@ if page == "🏠 Dashboard":
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PAGE: TEST WATER & AI PREDICTOR
+# PAGE: AI PREDICTOR
 # ═════════════════════════════════════════════════════════════════════════════
 elif page == "🔮 AI Predictor":
     st.markdown("## 🔮 AI Water Quality Predictor & Diagnostics")
@@ -982,142 +982,7 @@ elif page == "🔮 AI Predictor":
 
 
 # ═════════════════════════════════════════════════════════════════════════════
-# PAGE: ANALYTICS
-# ═════════════════════════════════════════════════════════════════════════════
-elif page == "📊 Analytics":
-    st.markdown("## 📊 Analytics & Insights")
-    history = st.session_state.history
-    if len(history) < 2:
-        st.info("📌 Not enough data. Add at least 2 water tests to see analytics.")
-        st.stop()
-
-    df = pd.DataFrame(history)
-
-    # ── Summary stats ──
-    st.markdown("### 📋 Summary Statistics")
-    num_cols = ["ph", "turbidity", "do", "heavy_metals", "nitrates", "tds", "temperature", "chlorine", "wqi"]
-    avail = [c for c in num_cols if c in df.columns]
-    st.dataframe(df[avail].describe().round(2), use_container_width=True)
-
-    st.markdown("---")
-
-    # ── Param trend charts ──
-    st.markdown("### 📈 Parameter Trends Over Time")
-    param_select = st.multiselect(
-        "Select parameters to plot:",
-        ["wqi", "ph", "turbidity", "do", "heavy_metals", "nitrates", "tds", "temperature", "chlorine"],
-        default=["wqi", "ph"],
-    )
-    if param_select:
-        fig_trend = go.Figure()
-        colors = ["#00b4d8","#06d6a0","#f77f00","#ef476f","#90e0ef","#a8dadc","#ffd166","#e76f51"]
-        for idx, param in enumerate(param_select):
-            if param in df.columns:
-                fig_trend.add_trace(go.Scatter(
-                    x=df["timestamp"], y=df[param],
-                    mode="lines+markers",
-                    name=param.replace("_", " ").title(),
-                    line=dict(color=colors[idx % len(colors)], width=2),
-                    marker=dict(size=6),
-                ))
-        fig_trend.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#e0f4ff"),
-            xaxis=dict(showgrid=False, color="#7fb3d3"),
-            yaxis=dict(gridcolor="rgba(0,180,216,0.1)", color="#7fb3d3"),
-            legend=dict(bgcolor="rgba(0,0,0,0.3)", bordercolor="#00b4d8"),
-            height=400, margin=dict(t=20, b=20),
-        )
-        st.plotly_chart(fig_trend, use_container_width=True)
-
-    # ── Distribution charts ──
-    st.markdown("### 📊 Parameter Distributions")
-    col1, col2 = st.columns(2)
-    with col1:
-        fig_ph = px.histogram(df, x="ph", nbins=15,
-                               title="pH Distribution",
-                               color_discrete_sequence=["#00b4d8"])
-        fig_ph.add_vline(x=6.5, line_dash="dash", line_color="#ef233c")
-        fig_ph.add_vline(x=8.5, line_dash="dash", line_color="#ef233c",
-                          annotation_text="WHO Limits")
-        fig_ph.update_layout(paper_bgcolor="rgba(0,0,0,0)",
-                               plot_bgcolor="rgba(0,0,0,0)",
-                               font=dict(color="#e0f4ff"), height=300)
-        st.plotly_chart(fig_ph, use_container_width=True)
-
-    with col2:
-        fig_wqi = px.histogram(df, x="wqi", nbins=15,
-                                title="WQI Score Distribution",
-                                color_discrete_sequence=["#06d6a0"])
-        fig_wqi.add_vline(x=50, line_dash="dash", line_color="#f77f00",
-                           annotation_text="Safe Threshold")
-        fig_wqi.update_layout(paper_bgcolor="rgba(0,0,0,0)",
-                                plot_bgcolor="rgba(0,0,0,0)",
-                                font=dict(color="#e0f4ff"), height=300)
-        st.plotly_chart(fig_wqi, use_container_width=True)
-
-    # ── Safety pie ──
-    st.markdown("### 🥧 Safe vs Unsafe Breakdown")
-    col1, col2 = st.columns(2)
-    with col1:
-        if "safe" in df.columns:
-            safe_counts = df["safe"].value_counts()
-            fig_pie = go.Figure(go.Pie(
-                labels=["Safe ✅", "Unsafe ❌"],
-                values=[safe_counts.get(True, 0), safe_counts.get(False, 0)],
-                hole=0.55,
-                marker=dict(colors=["#06d6a0", "#ef233c"],
-                            line=dict(color="#03071e", width=3)),
-                textinfo="percent+label",
-                textfont=dict(color="#fff"),
-            ))
-            fig_pie.update_layout(
-                paper_bgcolor="rgba(0,0,0,0)", font=dict(color="#e0f4ff"),
-                height=320, margin=dict(t=20, b=20),
-            )
-            st.plotly_chart(fig_pie, use_container_width=True)
-
-    with col2:
-        # Grade distribution
-        if "grade" in df.columns:
-            g_counts = df["grade"].value_counts()
-            fig_grade = go.Figure(go.Bar(
-                x=g_counts.index,
-                y=g_counts.values,
-                marker_color=["#06d6a0","#90e0ef","#f77f00","#ef476f","#ef233c"][:len(g_counts)],
-            ))
-            fig_grade.update_layout(
-                title="WQI Grade Distribution",
-                paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-                font=dict(color="#e0f4ff"),
-                xaxis=dict(showgrid=False), yaxis=dict(gridcolor="rgba(0,180,216,0.1)"),
-                height=320, margin=dict(t=40, b=20),
-            )
-            st.plotly_chart(fig_grade, use_container_width=True)
-
-    # ── Correlation heatmap ──
-    st.markdown("### 🔥 Parameter Correlation Heatmap")
-    corr_cols = [c for c in avail if c in df.columns]
-    if len(corr_cols) >= 3:
-        corr = df[corr_cols].corr().round(2)
-        fig_heat = go.Figure(go.Heatmap(
-            z=corr.values,
-            x=corr.columns.tolist(),
-            y=corr.index.tolist(),
-            colorscale=[[0,"#ef233c"],[0.5,"#03071e"],[1,"#06d6a0"]],
-            text=corr.values.round(2),
-            texttemplate="%{text}",
-            textfont=dict(size=11, color="#fff"),
-        ))
-        fig_heat.update_layout(
-            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-            font=dict(color="#e0f4ff"), height=400,
-        )
-        st.plotly_chart(fig_heat, use_container_width=True)
-
-
-# ═════════════════════════════════════════════════════════════════════════════
-# PAGE: LOCATION MAP  (Rich Interactive Version)
+# PAGE: LOCATION MAP
 # ═════════════════════════════════════════════════════════════════════════════
 elif page == "🗺️ Location Map":
     st.markdown("## 🗺️ Premium Interactive Monitoring Network")
@@ -1313,9 +1178,7 @@ elif page == "🗺️ Location Map":
             _marker["colorscale"] = colorscale
             _marker["colorbar"] = dict(
                 title=cbar_title,
-                thickness=12,
-                tickfont=dict(color="#e0f4ff"),
-                titlefont=dict(color="#00b4d8")
+                thickness=12
             )
             _marker["showscale"] = True
 
